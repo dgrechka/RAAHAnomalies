@@ -29,18 +29,32 @@ getSamples <- function(host,username,password,dbName,sensorID){
   return(q$doseRate);
 }
 
+safeDouble <- function(x) {
+  if((x == -Inf) || (x == Inf)) {
+    return('null');
+  }
+  else {
+    return(x);
+  }
+}
+
 persistModel <- function(host,username,password,dbName,sensorID,model,version){
   con <- dbConnect(RMySQL::MySQL(), host = host, dbname=dbName,
                    user = username, password = password);
-  dbGetQuery(con, paste0("insert into
+  q <- paste0("insert into
                          GammaProperties
-                         (sensorId,creationTimeUTC,GammaShape,GammaRate,totalMeasurementCount,outlierCount,version)
+                         (sensorId,creationTimeUTC,GammaShape,GammaRate,totalMeasurementCount,outlierCount,version,AIC,BIC,logLikelihood)
                          values (",sensorID,",UTC_TIMESTAMP(),",
-                         model$shape,",",
-                         model$rate,",",
-                         model$obs_count,",",
-                         model$outliers_count,",'",
-                         version,"')"));
+              model$shape,",",
+              model$rate,",",
+              model$obs_count,",",
+              model$outliers_count,",'",
+              version,"',",
+              safeDouble(model$quality.in_sample$AIC),",",
+              safeDouble(model$quality.in_sample$BIC),",",
+              safeDouble(model$quality.in_sample$lglk),")");
+  #print(q);
+  dbGetQuery(con, q);
   dbDisconnect(con);
   return();
 }

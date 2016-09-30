@@ -5,6 +5,8 @@
 # x is a numeric vector of all measuremnets
 # threshold is a portion of the data to consider as outliers;
 fit<- function(x,threshold=5e-4) {
+  N <- length(x)
+  
   # 1. filtering out outliers
   q_levels <- c(threshold*0.5,1.0-threshold*0.5);
   q_values <- quantile(x,probs = q_levels)
@@ -35,6 +37,15 @@ fit<- function(x,threshold=5e-4) {
   ppv <- tp/(tp+fp)
   recall <- tp/(tp+fn)
   
+  individual_lglk <- dgamma(x,shape,rate,log=T);
+  lglk <- sum(individual_lglk)
+  
+  k<-2
+  
+  aic <- 2*k-2*lglk;
+  bic <- k*log(N)-2*lglk;
+  print(paste0("lglk is ",lglk,"; AIC is ",aic,"; BIC is ",bic));
+  
   result = list(
     q_levels = q_levels,
     q_values = q_values,
@@ -44,6 +55,9 @@ fit<- function(x,threshold=5e-4) {
     rate=rate,
     shape=shape,
     quality.in_sample=list(
+      AIC=aic,
+      BIC=bic,
+      lglk=lglk,
       precision = ppv,
       sensitivity = recall,
       f1 = 2*ppv*recall/(ppv+recall)
